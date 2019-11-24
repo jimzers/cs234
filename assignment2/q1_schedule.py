@@ -32,7 +32,12 @@ class LinearSchedule(object):
 			  For t > self.nsteps self.epsilon remains constant
         """
         ##############################################################
-        ################ YOUR CODE HERE - 3-4 lines ################## 
+        ################ YOUR CODE HERE - 3-4 lines ##################
+        if t <= self.nsteps:
+            slope = (self.eps_end - self.eps_begin) / self.nsteps
+            self.epsilon = self.eps_begin + (slope * t)
+        else:
+            self.epsilon = self.eps_end
 
         pass
 
@@ -78,6 +83,10 @@ class LinearExploration(LinearSchedule):
         """
         ##############################################################
         ################ YOUR CODE HERE - 4-5 lines ##################
+        if np.random.random() < self.epsilon:
+            return self.env.action_space.sample()
+        else:
+            return best_action
 
         pass
 
