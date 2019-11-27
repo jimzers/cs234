@@ -50,7 +50,13 @@ class Linear(DQN):
         ##############################################################
         ################YOUR CODE HERE (6-15 lines) ##################
 
-        pass
+        img_height, img_width, nchannels = state_shape[0], state_shape[1], state_shape[2]
+        self.s = tf.placeholder(tf.uint8, shape=[None, img_height, img_width, nchannels * self.config.state_history], name='state')
+        self.a = tf.placeholder(tf.int32, shape=[None], name='action')
+        self.r = tf.placeholder(tf.float32, shape=[None], name='reward')
+        self.sp = tf.placeholder(tf.uint8, shape=[None, img_height, img_width, nchannels * self.config.state_history], name='next_state')
+        self.done_mask = tf.placeholder(tf.bool, shape=[None], name='done_mask')
+        self.lr = tf.placeholder(tf.float32, shape=(), name='lr')
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -86,9 +92,10 @@ class Linear(DQN):
             - Make sure to also specify the scope and reuse
         """
         ##############################################################
-        ################ YOUR CODE HERE - 2-3 lines ################## 
-        
-        pass
+        ################ YOUR CODE HERE - 2-3 lines ##################
+        x = tf.layers.flatten(state, scope=scope)
+        # input, output unit count, stuff after it
+        out = tf.layers.dense(x, num_actions, reuse=reuse)
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -131,9 +138,15 @@ class Linear(DQN):
         """
         ##############################################################
         ################### YOUR CODE HERE - 5-10 lines #############
-        
-        pass
 
+        # grab weights
+        w = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, q_scope)
+
+        target_w = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, target_q_scope)
+
+        actions = [tf.assign(target_w[i], w[i]) for i in range(w.shape)]
+        # unpacking containers
+        self.update_target_op = tf.group(*actions)
         ##############################################################
         ######################## END YOUR CODE #######################
 
@@ -170,6 +183,8 @@ class Linear(DQN):
         """
         ##############################################################
         ##################### YOUR CODE HERE - 4-5 lines #############
+
+
 
         pass
 
@@ -217,6 +232,8 @@ class Linear(DQN):
 
 if __name__ == '__main__':
     env = EnvTest((5, 5, 1))
+    # state_shape = list(env.observation_space.shape)
+    # print(state_shape)
 
     # exploration strategy
     exp_schedule = LinearExploration(env, config.eps_begin, 
