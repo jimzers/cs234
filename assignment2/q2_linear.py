@@ -93,9 +93,9 @@ class Linear(DQN):
         """
         ##############################################################
         ################ YOUR CODE HERE - 2-3 lines ##################
-        x = tf.layers.flatten(state, scope=scope)
+        x = layers.flatten(state, scope=scope)
         # input, output unit count, stuff after it
-        out = tf.layers.dense(x, num_actions, reuse=reuse)
+        out = layers.fully_connected(x, num_actions, scope=scope, reuse=reuse)
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -144,7 +144,7 @@ class Linear(DQN):
 
         target_w = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, target_q_scope)
 
-        actions = [tf.assign(target_w[i], w[i]) for i in range(w.shape)]
+        actions = [tf.assign(target_w[i], w[i]) for i in range(len(w))]
         # unpacking containers
         self.update_target_op = tf.group(*actions)
         ##############################################################
@@ -184,9 +184,16 @@ class Linear(DQN):
         ##############################################################
         ##################### YOUR CODE HERE - 4-5 lines #############
 
-
-
-        pass
+        # one hot encode actions
+        one_hot = tf.one_hot(self.a, num_actions)
+        # find the rewards for all the actions taken from sequence
+        # q * one_hot will only give the values for the corresponding action
+        # for each state containing an array of actions  in q
+        q_poli = tf.reduce_sum(q * one_hot, axis=1)
+        # find all states that are not done
+        unfinished = 1 - tf.cast(self.done_mask, tf.float32)
+        q_samp = self.r + unfinished * self.config.gamma * tf.reduce_max(target_q, axis=1)
+        self.loss = tf.reduce_mean((q_samp - q_poli)**2)
 
         ##############################################################
         ######################## END YOUR CODE #######################
@@ -223,7 +230,16 @@ class Linear(DQN):
         ##############################################################
         #################### YOUR CODE HERE - 8-12 lines #############
 
-        pass
+        # grab optimizer for Adam
+        # with tf.variable_scope
+        opt = tf.train.AdamOptimizer(learning_rate=self.lr)
+        var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+        opt_grads = opt.compute_gradients(self.loss, var_list=var_list)
+        if self.config.grad_clip:
+            opt_grads = [tf.clip_by_norm(gradient, self.config.clip_val) for gradient in opt_grads]
+        self.train_op = opt.apply_gradients(opt_grads)
+        self.grad_norm = tf.global_norm(self.train_op)
+
         
         ##############################################################
         ######################## END YOUR CODE #######################
