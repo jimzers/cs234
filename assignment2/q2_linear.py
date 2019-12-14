@@ -140,9 +140,9 @@ class Linear(DQN):
         ################### YOUR CODE HERE - 5-10 lines #############
 
         # grab weights
-        w = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, q_scope)
+        w = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, q_scope)
 
-        target_w = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, target_q_scope)
+        target_w = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, target_q_scope)
 
         actions = [tf.assign(target_w[i], w[i]) for i in range(len(w))]
         # unpacking containers
@@ -233,12 +233,15 @@ class Linear(DQN):
         # grab optimizer for Adam
         # with tf.variable_scope
         opt = tf.train.AdamOptimizer(learning_rate=self.lr)
-        var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+        var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope)
+        # compute gradients returns a list of tuples, each tuple contains a gradient and corresponding tf.Variable
         opt_grads = opt.compute_gradients(self.loss, var_list=var_list)
+        # print(opt_grads[0])
+        # print(dasfa)
         if self.config.grad_clip:
-            opt_grads = [tf.clip_by_norm(gradient, self.config.clip_val) for gradient in opt_grads]
+            opt_grads = [(tf.clip_by_norm(gradient[0], self.config.clip_val), gradient[1]) for gradient in opt_grads]
         self.train_op = opt.apply_gradients(opt_grads)
-        self.grad_norm = tf.global_norm(self.train_op)
+        self.grad_norm = tf.global_norm(opt_grads)
 
         
         ##############################################################
