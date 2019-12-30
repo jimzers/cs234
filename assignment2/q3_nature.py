@@ -55,22 +55,21 @@ class NatureQN(Linear):
         ##############################################################
         ################ YOUR CODE HERE - 10-15 lines ################
 
-        # image height - 84 x 84 x 4 - 4th channel is the alpha channel
-        conv1 = layers.conv2d(inputs=state, kernel_size=(8, 8), num_outputs=32, stride=4, scope=scope, reuse=reuse, name='conv1')
-        relu1 = tf.nn.relu(conv1, name='relu1')
+        with tf.variable_scope(scope, reuse=reuse):
+            # image height - 84 x 84 x 4 - 4th channel is the alpha channel
+            conv1 = layers.conv2d(inputs=state, kernel_size=(8, 8), num_outputs=32, stride=4, activation_fn=tf.nn.relu)
 
-        conv2 = layers.conv2d(inputs=relu1, kernel_size=(4, 4), num_outputs=64, stride=2, scope=scope, reuse=reuse, name='conv2')
-        relu2 = tf.nn.relu(conv2, name='relu2')
+            conv2 = layers.conv2d(inputs=conv1, kernel_size=(4, 4), num_outputs=64, stride=2, activation_fn=tf.nn.relu)
 
-        conv3 = layers.conv2d(inputs=relu2, kernel_size=(3, 3), num_outputs=64, stride=1, scope=scope, reuse=reuse,
-                              name='conv3')
-        relu3 = tf.nn.relu(conv3, name='relu3')
+            conv3 = layers.conv2d(inputs=conv2, kernel_size=(3, 3), num_outputs=64, stride=1, activation_fn=tf.nn.relu)
 
-        dense1 = layers.dense(inputs=relu3, units=512, scope=scope, reuse=reuse, name='dense1')
-        relu4 = tf.nn.relu(dense1, name='dense1')
+            flatten1 = layers.flatten(conv3)
 
-        dense2 = layers.dense(inputs=relu4, units=num_actions, scope=scope, reuse=reuse, name='dense2')
-        out = layers.flatten(dense2, name='flatten1')
+            dense1 = layers.fully_connected(flatten1, 512, activation_fn=tf.nn.relu)
+
+            dense2 = layers.fully_connected(dense1, num_actions, activation_fn=None)
+
+            out = dense2
 
         ##############################################################
         ######################## END YOUR CODE #######################
